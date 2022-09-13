@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Tweet;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 
 class TweetController extends Controller
@@ -49,9 +51,10 @@ class TweetController extends Controller
                 ->withInput()
                 ->withErrors($validator);
         }
-        // create()は最初から用意されている関数
-        // 戻り値は挿入されたレコードの情報
-        $result = Tweet::create($request->all());
+
+        $data = $request->merge(['user_id' => Auth::user()->id])->all();
+        $result = Tweet::create($data);
+
         // ルーティング「todo.index」にリクエスト送信（一覧ページに移動）
         return redirect()->route('tweet.index');
     }
@@ -116,5 +119,16 @@ class TweetController extends Controller
     {
         $result = Tweet::find($id)->delete();
         return redirect()->route('tweet.index');
+    }
+
+    public function mydata()
+    {
+        // Userモデルに定義したリレーションを使用してデータを取得する．
+        $tweets = User::query()
+            ->find(Auth::user()->id)
+            ->userTweets()
+            ->orderBy('created_at', 'desc')
+            ->get();
+        return view('tweet.index', compact('tweets'));
     }
 }
